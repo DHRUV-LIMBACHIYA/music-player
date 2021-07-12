@@ -32,6 +32,11 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    override fun onResume() {
+        super.onResume()
+        mViewModel.showPlayIcon() // display a play icon.
+    }
+
     override fun onPause() {
         super.onPause()
         mViewModel.pauseMediaPlayer() // Pause the media player.
