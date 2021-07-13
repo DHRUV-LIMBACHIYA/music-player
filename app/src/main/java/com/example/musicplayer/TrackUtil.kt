@@ -3,10 +3,6 @@ package com.example.musicplayer
 import android.content.Context
 import android.media.MediaPlayer
 import android.util.Log
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.schedulers.Schedulers
-import java.util.concurrent.TimeUnit
 
 /**
  * Created by Dhruv Limbachiya on 12-07-2021.
@@ -17,15 +13,20 @@ private const val TAG = "MusicUtil"
 /*
  Utility class for managing media player and its states.
  */
-class TrackUtil(val context: Context) {
+class TrackUtil(val context: Context) : MediaPlayer.OnCompletionListener {
 
     private lateinit var mediaPlayer: MediaPlayer
     private var currentTrack: Int = 0
     private var tracks: List<Track>
+    private lateinit var mPlaybackListener: TrackPlaybackListener
 
     init {
         currentTrack = 0
         tracks = getMediaFromRaw(context)
+    }
+
+    fun setCallback(playbackListener: TrackPlaybackListener){
+        mPlaybackListener = playbackListener
     }
 
     /**
@@ -33,6 +34,7 @@ class TrackUtil(val context: Context) {
      */
     fun onMediaPlayerCreate() {
         mediaPlayer = MediaPlayer.create(context, tracks[currentTrack].trackId)
+        mediaPlayer.setOnCompletionListener(this)
         Log.i(TAG, "onMediaPlayerCreate: Track Id $tracks[currentTrack].trackId")
     }
 
@@ -104,6 +106,14 @@ class TrackUtil(val context: Context) {
     fun onPauseMediaPlayer() {
         mediaPlayer.pause()
     }
+
+    override fun onCompletion(mp: MediaPlayer?) {
+        if(currentTrack < tracks.size && currentTrack != tracks.size - 1){
+            mPlaybackListener.onComplete(true)
+        }else{
+            mPlaybackListener.onComplete(false)
+        }
+    }
 }
 
 /**
@@ -136,3 +146,11 @@ data class Track(
     var currentDuration: Int = 0,
     var isPlaying: Boolean = false,
 )
+
+/**
+ * interface for media player callback
+ */
+interface TrackPlaybackListener{
+    fun onComplete(isComplete: Boolean)
+}
+

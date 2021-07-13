@@ -16,7 +16,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
 
     val playObservable = ObservableBoolean() // Track play and pause button
 
-    private lateinit var trackUtil: TrackUtil
+    var trackUtil: TrackUtil? = null // Hold track util instance
 
     // Hold the live data of current track.
     private val _currentTrackDetail = MutableLiveData<Track?>()
@@ -26,17 +26,16 @@ class MainViewModel(private val context: Context) : ViewModel() {
      * Initialize the media player with raw resource.
      */
     fun initMediaPlayer() {
-        trackUtil = TrackUtil(context)
-        trackUtil.onMediaPlayerCreate()
+        trackUtil?.onMediaPlayerCreate()
+        _currentTrackDetail.value =
+            trackUtil?.currentTrackDetails() // fetch the current track details data.
     }
 
     /**
      * invoke on play/pause button click
      */
     fun onPlayOrPause() {
-        trackUtil.playorPauseTrack()  // call [TrackUtil]'s playorPauseTrack() method
-        _currentTrackDetail.value =
-            trackUtil.currentTrackDetails() // fetch the current track details data.
+        trackUtil?.playorPauseTrack()  // call [TrackUtil]'s playorPauseTrack() method
         playObservable.set(_currentTrackDetail.value?.isPlaying ?: false) // set it's playing status
     }
 
@@ -47,8 +46,8 @@ class MainViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             playObservable.set(false) // show play icon.
             delay(500) // delay play to pause icon transition to create a simulation.
-            trackUtil.nextTrack() // call [TrackUtil]'s nextTrack() method
-            _currentTrackDetail.value = trackUtil.currentTrackDetails()
+            trackUtil?.nextTrack() // call [TrackUtil]'s nextTrack() method
+            _currentTrackDetail.value = trackUtil?.currentTrackDetails()
             playObservable.set(_currentTrackDetail.value?.isPlaying ?: false)
         }
     }
@@ -60,8 +59,8 @@ class MainViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             playObservable.set(false) // show play icon.
             delay(500) // delay play to pause icon transistion to create a simulation.
-            trackUtil.previousTrack() // call [TrackUtil]'s previous() method
-            _currentTrackDetail.value = trackUtil.currentTrackDetails()
+            trackUtil?.previousTrack() // call [TrackUtil]'s previous() method
+            _currentTrackDetail.value = trackUtil?.currentTrackDetails()
             playObservable.set(_currentTrackDetail.value?.isPlaying ?: false)
         }
     }
@@ -70,14 +69,14 @@ class MainViewModel(private val context: Context) : ViewModel() {
      * Release media player resources by calling TrackUtils's releaseMediaPlayer() method
      */
     fun releaseMediaPlayer() {
-        trackUtil.releaseMediaPlayer()
+        trackUtil?.releaseMediaPlayer()
     }
 
     /**
      * Pause the media player by calling TrackUtils's  onPauseMediaPlayer() method.
      */
     fun pauseMediaPlayer() {
-        trackUtil.onPauseMediaPlayer()
+        trackUtil?.onPauseMediaPlayer()
     }
 
     /**
