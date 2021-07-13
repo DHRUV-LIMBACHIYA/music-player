@@ -2,11 +2,13 @@ package com.example.musicplayer
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import com.example.musicplayer.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity(),TrackPlaybackListener{
+class MainActivity : AppCompatActivity(),TrackPlaybackListener {
 
     private lateinit var mBinding: ActivityMainBinding
 
@@ -26,6 +28,24 @@ class MainActivity : AppCompatActivity(),TrackPlaybackListener{
         initViewModel()
 
         observeLiveEvents()
+
+        mBinding.seekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if(fromUser){
+                    mViewModel.seekTo(progress * 1000)
+                }
+                Log.i(TAG, "onProgressChanged: ")
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                Log.i(TAG, "onStartTrackingTouch: ")
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                Log.i(TAG, "onStopTrackingTouch: ")
+            }
+
+        })
     }
 
     /**
@@ -68,7 +88,11 @@ class MainActivity : AppCompatActivity(),TrackPlaybackListener{
             Toast.makeText(this,"Track Changed",Toast.LENGTH_LONG).show()
         }else{
             mViewModel.showPlayIcon() // display a play icon.
-            Toast.makeText(this,"Tracks completed! Click previous button to play a track",Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this,"Tracks completed! Click previous button to play a track",Toast.LENGTH_SHORT).show()
         }
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
     }
 }
