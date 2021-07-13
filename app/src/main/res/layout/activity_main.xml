@@ -66,7 +66,7 @@
             android:layout_marginEnd="@dimen/margin_fifty"
             android:layout_marginTop="@dimen/margin_twenty"
             android:max="@{track.totalDuration / 1000}"
-            android:progress="@{viewModel.currentDuration}"
+            android:progress="@{viewModel.seekBarProgress}"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/duration_textview" />

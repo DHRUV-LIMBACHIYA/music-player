@@ -1,13 +1,14 @@
 package com.example.musicplayer
 
 import android.content.Context
+import android.util.Log
 import androidx.databinding.ObservableBoolean
 import androidx.databinding.ObservableInt
-import androidx.databinding.ObservableLong
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -28,7 +29,11 @@ class MainViewModel(private val context: Context) : ViewModel() {
     val currentTrackDetail: LiveData<Track?> get() = _currentTrackDetail
 
     private val disposable = CompositeDisposable()
-    var currentDuration = ObservableInt()
+
+    var seekBarProgress = ObservableInt()
+
+    val _isCompleted = MutableLiveData<Boolean>()
+    val isCompleted: LiveData<Boolean> get() = _isCompleted
 
     /**
      * Initialize the media player with raw resource.
@@ -38,12 +43,24 @@ class MainViewModel(private val context: Context) : ViewModel() {
         _currentTrackDetail.value =
             trackUtil?.currentTrackDetails() // fetch the current track details data.
 
+        val totalDuration = trackUtil?.currentTrackDetails()?.totalDuration?.toLong()
+
         disposable
             .add(
-                trackUtil?.timerObservable?.subscribe {
-                    currentDuration.set((it / 1000).toInt())
-                    currentDurationObservable.set(millisToTimer(it))
-                }
+                trackUtil?.getCurrentDuration()?.observeOn(AndroidSchedulers.mainThread())
+                    ?.subscribe { elapsedTime ->
+                        seekBarProgress.set((elapsedTime / 1000).toInt())
+                        currentDurationObservable.set(millisToTimer(elapsedTime))
+
+                        if (totalDuration == elapsedTime) {
+                            // Check if track total duration == elapsedTime (Completed or not).
+                            Log.i(
+                                TAG,
+                                "initMediaPlayer: Total Duration :${_currentTrackDetail.value?.totalDuration?.toLong()} and Current Duration : $elapsedTime"
+                            )
+                            _isCompleted.value = true
+                        }
+                    }
             )
     }
 
@@ -55,6 +72,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
         _currentTrackDetail.value =
             trackUtil?.currentTrackDetails() // fetch the current track details data.
         playObservable.set(_currentTrackDetail.value?.isPlaying ?: false) // set it's playing status
+
     }
 
     /**
@@ -104,14 +122,13 @@ class MainViewModel(private val context: Context) : ViewModel() {
         playObservable.set(false) // display play icon.
     }
 
-    fun disposeTimerObservable() {
-//        if (_currentTrackDetail.value?.totalDuration == this.currentDuration.get().toInt()) {
-//            disposable.clear() // clear the disposable. Can add other disposable.
-//        }
+    fun clearTimerObservable() {
+        disposable.clear() // clear the disposable. Can add other disposable.
+        Log.i(TAG, "clearTimerObservable: ")
     }
 
     /**
-     *
+     * Call a helper method to perform seek operation.
      */
     fun seekTo(progress: Int) {
         trackUtil?.mediaPlayerProgress(progress)

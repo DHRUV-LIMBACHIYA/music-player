@@ -3,7 +3,9 @@ package com.example.musicplayer
 import android.content.Context
 import android.media.MediaPlayer
 import android.util.Log
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
 /**
@@ -21,7 +23,6 @@ class TrackUtil(private val context: Context) : MediaPlayer.OnCompletionListener
     private var currentTrack: Int = 0
     private var tracks: List<Track>
     private lateinit var mPlaybackListener: TrackPlaybackListener
-    lateinit var timerObservable: Observable<Long>
 
     init {
         currentTrack = 0
@@ -41,7 +42,6 @@ class TrackUtil(private val context: Context) : MediaPlayer.OnCompletionListener
     fun onMediaPlayerCreate() {
         mediaPlayer = MediaPlayer.create(context, tracks[currentTrack].trackId)
         mediaPlayer.setOnCompletionListener(this)
-        getCurrentDuration()
         Log.i(TAG, "onMediaPlayerCreate: Track Id $tracks[currentTrack].trackId")
     }
 
@@ -58,14 +58,12 @@ class TrackUtil(private val context: Context) : MediaPlayer.OnCompletionListener
             tracks[currentTrack].isPlaying =
                 false // set playing status to false on media player pause state.
         }
-        tracks[currentTrack].trackSelect = true
     }
 
     /**
      * Logic for playing next track.
      */
     fun nextTrack() {
-        tracks[currentTrack].trackSelect = false
         tracks[currentTrack].isPlaying = false // Resetting the playing status
         mediaPlayer.stop() // stop the track because reset() will call onCompleteListener() which is not need in our case.
         if (currentTrack < tracks.size && currentTrack != tracks.size - 1) {
@@ -93,17 +91,8 @@ class TrackUtil(private val context: Context) : MediaPlayer.OnCompletionListener
      * @return track - Track object.
      */
     fun currentTrackDetails(): Track {
-        if (mediaPlayer.isPlaying) {
-            val totalDuration = mediaPlayer.duration
-            val currentDuration = mediaPlayer.currentPosition
-            tracks[currentTrack].totalDuration = totalDuration
-            tracks[currentTrack].currentDuration = currentDuration
-            Log.i(
-                TAG,
-                "currentTrackDetails: Total Duration : $totalDuration and Current Duration : $currentDuration"
-            )
-        }
-
+        val totalDuration = mediaPlayer.duration
+        tracks[currentTrack].totalDuration = totalDuration
         return tracks[currentTrack]
     }
 
@@ -124,13 +113,15 @@ class TrackUtil(private val context: Context) : MediaPlayer.OnCompletionListener
     /**
      * Get the elapsed time.
      */
-    private fun getCurrentDuration() {
-        timerObservable = Observable
-            .interval(0, 15, TimeUnit.MILLISECONDS) // 15 milliseconds => ~ 1000/60fps
+    fun getCurrentDuration() : Observable<Long>{
+       return Observable
+            .interval(0, 1, TimeUnit.MILLISECONDS) // 15 milliseconds => ~ 1000/60fps
             .map {
                 Log.i(TAG, "getCurrentDuration: Interval")
                 mediaPlayer.currentPosition.toLong()
             }
+            .observeOn(Schedulers.io())
+            .subscribeOn(AndroidSchedulers.mainThread())
     }
 
 
@@ -146,6 +137,9 @@ class TrackUtil(private val context: Context) : MediaPlayer.OnCompletionListener
 
     }
 
+    /**
+     * Change media player current playing position with seek position.
+     */
     fun mediaPlayerProgress(progress: Int) {
         mediaPlayer.seekTo(progress)
     }
@@ -185,9 +179,7 @@ data class Track(
     val trackId: Int,
     val trackName: String,
     var totalDuration: Int = 0,
-    var currentDuration: Int = 0,
     var isPlaying: Boolean = false,
-    var trackSelect: Boolean = false
 )
 
 /**

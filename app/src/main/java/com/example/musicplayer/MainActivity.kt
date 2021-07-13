@@ -6,7 +6,10 @@ import android.util.Log
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.lifecycleScope
 import com.example.musicplayer.databinding.ActivityMainBinding
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(),TrackPlaybackListener {
 
@@ -65,6 +68,14 @@ class MainActivity : AppCompatActivity(),TrackPlaybackListener {
                 mBinding.track = track
             }
         })
+
+        mViewModel.isCompleted.observe(this,{ isCompleted  ->
+            if(isCompleted){
+                mViewModel.clearTimerObservable()
+                mViewModel._isCompleted.value = false
+            }
+        })
+
     }
 
     override fun onResume() {
